@@ -24,7 +24,7 @@ class PostMutations:
 
     @strawberry.mutation
     def update_post(self, info: Info, post_id: uuid.UUID, body: Optional[str] = None,
-        exercise_ids: Optional[list[uuid.UUID]] = None) -> Optional[PostType]:
+        exercise_ids: Optional[list[uuid.UUID]] = None) -> PostType:
         
         db = info.context["db"]
         user_id = info.context.get("user_id")
@@ -41,7 +41,7 @@ class PostMutations:
             raise
 
     @strawberry.mutation
-    def delete_post(self, info: Info, post_id: uuid.UUID) -> bool:
+    def delete_post(self, info: Info, post_id: uuid.UUID) -> PostType:
         db = info.context["db"]
         user_id = info.context.get("user_id")
         
