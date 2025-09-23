@@ -1,0 +1,59 @@
+import uuid
+from sqlalchemy import select
+from typing import List, Optional
+from sqlalchemy.orm import Session
+
+from app.models.post import Post
+from app.schemas.post import PostCreate, PostUpdate
+
+class PostRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create(self, user_id: uuid.UUID, post_in: PostCreate) -> Post:
+        db_post = Post(
+            user_id=user_id,
+            body=post_in.body,
+            exercise_ids=post_in.exercise_ids,
+        )
+       
+        self.db.add(db_post)
+        self.db.commit()
+        self.db.refresh(db_post)
+        
+        return db_post
+
+    def get(self, post_id: uuid.UUID) -> Optional[Post]:
+        return self.db.scalar(select(Post).where(Post.id == post_id))
+
+    def get_all(self, skip: int = 0, limit: int = 100) -> List[Post]:
+        return self.db.scalars(select(Post).offset(skip).limit(limit)).all()
+
+    def get_by_user(self, user_id: uuid.UUID) -> List[Post]:
+        return self.db.scalars(select(Post).where(Post.user_id == user_id)).all()
+
+    def update(self, post_id: uuid.UUID, post_in: PostUpdate) -> Optional[Post]:
+        db_post = self.get(post_id)
+        
+        if not db_post:
+            return None
+        if post_in.body is not None:
+            db_post.body = post_in.body
+        if post_in.exercise_ids is not None:
+            db_post.exercise_ids = post_in.exercise_ids
+        
+        self.db.commit()
+        self.db.refresh(db_post)
+        
+        return db_post
+
+    def delete(self, post_id: uuid.UUID) -> bool:
+        db_post = self.get(post_id)
+        
+        if not db_post:
+            return False
+        
+        self.db.delete(db_post)
+        self.db.commit()
+        
+        return True
