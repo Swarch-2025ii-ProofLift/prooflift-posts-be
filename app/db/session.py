@@ -12,7 +12,7 @@ db_uri = URL.create(
     database=settings.DB_NAME,
 )
 
-engine = create_engine(db_uri, echo=True)
+engine = create_engine(db_uri, echo=False)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
