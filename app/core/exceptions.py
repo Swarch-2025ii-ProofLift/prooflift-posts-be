@@ -9,3 +9,6 @@ class AuthenticationError(AppError):
 
 class AuthorizationError(AppError):
     pass
+
+class NotFoundError(AppError):
+    pass

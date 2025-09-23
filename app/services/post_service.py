@@ -3,9 +3,9 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.post import Post
-from app.core.exceptions import AuthorizationError
 from app.schemas.post import PostCreate, PostUpdate
 from app.repositories.post_repository import PostRepository
+from app.core.exceptions import AuthorizationError, NotFoundError
 
 class PostService:
     def __init__(self, db: Session):
@@ -23,23 +23,23 @@ class PostService:
     def list_posts_by_user(self, user_id: uuid.UUID) -> List[Post]:
         return self.repo.get_by_user(user_id)
 
-    def update_post(self, post_id: uuid.UUID, user_id: uuid.UUID, post_in: PostUpdate) -> Optional[Post]:
+    def update_post(self, post_id: uuid.UUID, user_id: uuid.UUID, post_in: PostUpdate) -> Post:
         db_post = self.repo.get(post_id)
         
         if not db_post:
-            return None
+            raise NotFoundError("Post not found")
         if db_post.user_id != user_id:
             raise AuthorizationError("You are not allowed to edit this post")
         
         return self.repo.update(db_post, post_in)
 
-    def delete_post(self, post_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+    def delete_post(self, post_id: uuid.UUID, user_id: uuid.UUID) -> Post:
         db_post = self.repo.get(post_id)
         
         if not db_post:
-            return False
+            raise NotFoundError("Post not found")
         if db_post.user_id != user_id:
             raise AuthorizationError("You are not allowed to delete this post")
         
         self.repo.delete(db_post)
-        return True
+        return db_post
