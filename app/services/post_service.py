@@ -3,6 +3,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.post import Post
+from app.core.exceptions import AuthorizationError
 from app.schemas.post import PostCreate, PostUpdate
 from app.repositories.post_repository import PostRepository
 
@@ -28,9 +29,9 @@ class PostService:
         if not db_post:
             return None
         if db_post.user_id != user_id:
-            raise PermissionError("You are not allowed to edit this post")
+            raise AuthorizationError("You are not allowed to edit this post")
         
-        return self.repo.update(post_id, post_in)
+        return self.repo.update(db_post, post_in)
 
     def delete_post(self, post_id: uuid.UUID, user_id: uuid.UUID) -> bool:
         db_post = self.repo.get(post_id)
@@ -38,6 +39,7 @@ class PostService:
         if not db_post:
             return False
         if db_post.user_id != user_id:
-            raise PermissionError("You are not allowed to delete this post")
+            raise AuthorizationError("You are not allowed to delete this post")
         
-        return self.repo.delete(post_id)
+        self.repo.delete(db_post)
+        return True

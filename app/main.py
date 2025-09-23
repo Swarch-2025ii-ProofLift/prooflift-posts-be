@@ -5,6 +5,7 @@ from strawberry.fastapi import GraphQLRouter
 from app.core.config import settings
 from app.api.graphql.schema import schema
 from app.db.session import get_db, Base, engine
+from app.core.exceptions import AuthenticationError
 from app.core.security import get_user_id_from_token
 
 Base.metadata.create_all(bind=engine)
@@ -17,7 +18,7 @@ async def get_context(request: Request, db=Depends(get_db)):
         token = auth_header.split(" ", 1)[1]
         try:
             user_id = get_user_id_from_token(token)
-        except Exception:
+        except AuthenticationError:
             pass
 
     return {"db": db, "user_id": user_id}

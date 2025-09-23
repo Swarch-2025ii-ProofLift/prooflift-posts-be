@@ -27,33 +27,22 @@ class PostRepository:
         return self.db.scalar(select(Post).where(Post.id == post_id))
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Post]:
-        return self.db.scalars(select(Post).offset(skip).limit(limit)).all()
+        return self.db.scalars(select(Post).order_by(Post.created_at.desc()).offset(skip).limit(limit)).all()
 
     def get_by_user(self, user_id: uuid.UUID) -> List[Post]:
         return self.db.scalars(select(Post).where(Post.user_id == user_id)).all()
 
-    def update(self, post_id: uuid.UUID, post_in: PostUpdate) -> Optional[Post]:
-        db_post = self.get(post_id)
-        
-        if not db_post:
-            return None
+    def update(self, post: Post, post_in: PostUpdate) -> Post:
         if post_in.body is not None:
-            db_post.body = post_in.body
+            post.body = post_in.body
         if post_in.exercise_ids is not None:
-            db_post.exercise_ids = post_in.exercise_ids
+            post.exercise_ids = post_in.exercise_ids
         
         self.db.commit()
-        self.db.refresh(db_post)
+        self.db.refresh(post)
         
-        return db_post
+        return post
 
-    def delete(self, post_id: uuid.UUID) -> bool:
-        db_post = self.get(post_id)
-        
-        if not db_post:
-            return False
-        
-        self.db.delete(db_post)
+    def delete(self, post: Post) -> None:
+        self.db.delete(post)
         self.db.commit()
-        
-        return True

@@ -6,6 +6,7 @@ from strawberry.types import Info
 from app.api.graphql.types.post import PostType
 from app.services.post_service import PostService
 from app.schemas.post import PostCreate, PostUpdate
+from app.core.exceptions import AuthenticationError, AppError
 
 @strawberry.type
 class PostMutations:
@@ -15,7 +16,7 @@ class PostMutations:
         user_id = info.context.get("user_id")
         
         if not user_id:
-            raise Exception("Authentication required")
+            raise AuthenticationError()
 
         service = PostService(db)
         post_in = PostCreate(body=body, exercise_ids=exercise_ids or [])
@@ -29,15 +30,15 @@ class PostMutations:
         user_id = info.context.get("user_id")
 
         if not user_id:
-            raise Exception("Authentication required")
+            raise AuthenticationError()
 
         service = PostService(db)
         post_in = PostUpdate(body=body, exercise_ids=exercise_ids)
 
         try:
             return service.update_post(post_id, user_id, post_in)
-        except PermissionError:
-            raise Exception("Not allowed to update this post")
+        except AppError:
+            raise
 
     @strawberry.mutation
     def delete_post(self, info: Info, post_id: uuid.UUID) -> bool:
@@ -45,10 +46,11 @@ class PostMutations:
         user_id = info.context.get("user_id")
         
         if not user_id:
-            raise Exception("Authentication required")
+            raise AuthenticationError()
 
         service = PostService(db)
+
         try:
             return service.delete_post(post_id, user_id)
-        except PermissionError:
-            raise Exception("Not allowed to delete this post")
+        except AppError:
+            raise

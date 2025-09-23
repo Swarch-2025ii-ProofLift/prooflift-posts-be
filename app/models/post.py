@@ -3,7 +3,6 @@ from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, DateTime, Text, ARRAY
 
-
 from app.db.session import Base
 
 class Post(Base):
