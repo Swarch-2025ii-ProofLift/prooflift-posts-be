@@ -1,6 +1,7 @@
 import uvicorn
 from fastapi import FastAPI, Depends, Request
 from strawberry.fastapi import GraphQLRouter
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.api.graphql.schema import schema
@@ -30,6 +31,14 @@ graphql_app = GraphQLRouter(
 
 app = FastAPI(
     title=settings.PROJECT_NAME
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(graphql_app, prefix="/graphql")
