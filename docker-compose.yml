@@ -1,6 +1,6 @@
 services:
   prooflift-posts-db:
-    image: postgres:15
+    image: postgres
     container_name: prooflift-posts-db
     restart: always
     environment:
