@@ -45,6 +45,7 @@ class CommentRepository:
         self.db.refresh(comment)
         return comment
 
-    def delete(self, comment: Comment) -> None:
+    def delete(self, comment: Comment) -> Comment:
         self.db.delete(comment)
         self.db.commit()
+        return comment

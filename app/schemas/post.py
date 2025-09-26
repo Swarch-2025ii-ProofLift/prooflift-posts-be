@@ -13,11 +13,3 @@ class PostCreate(PostBase):
 class PostUpdate(BaseModel):
     body: Optional[str] = Field(None)
     exercise_ids: Optional[List[uuid.UUID]] = None
-
-class PostResponse(PostBase):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    user_id: uuid.UUID
-    created_at: datetime
-    updated_at: Optional[datetime]

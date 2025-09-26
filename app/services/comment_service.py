@@ -35,5 +35,4 @@ class CommentService:
             raise NotFoundError("Comment not found")
         if db_obj.user_id != user_id:
             raise AuthorizationError("You are not allowed to delete this comment")
-        self.repo.delete(db_obj)
-        return db_obj
+        return self.repo.delete(db_obj)

@@ -14,13 +14,3 @@ class CommentCreate(CommentBase):
 
 class CommentUpdate(BaseModel):
     body: Optional[str] = Field(None)
-
-
-class CommentResponse(CommentBase):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    post_id: uuid.UUID
-    user_id: uuid.UUID
-    created_at: datetime
-    updated_at: Optional[datetime]
