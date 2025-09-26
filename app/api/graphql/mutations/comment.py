@@ -1,6 +1,5 @@
 import uuid
 import strawberry
-from typing import Optional
 from strawberry.types import Info
 
 from app.api.graphql.types.comment import CommentType

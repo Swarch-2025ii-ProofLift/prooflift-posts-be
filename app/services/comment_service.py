@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional
+from typing import List
 from sqlalchemy.orm import Session
 
 from app.models.comment import Comment

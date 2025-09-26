@@ -1,7 +1,6 @@
 import uuid
-from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 
 class PostBase(BaseModel):
     body: str = Field(...)
