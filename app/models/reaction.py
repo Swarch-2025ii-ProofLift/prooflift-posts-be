@@ -7,7 +7,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Enum, UniqueConstraint
 from app.db.session import Base
 
 
-class ReactionKind(str, enum.Enum):
+class ReactionType(str, enum.Enum):
     LIKE = "LIKE"
     LOVE = "LOVE"
     CLAP = "CLAP"
@@ -24,7 +24,7 @@ class Reaction(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    kind = Column(Enum(ReactionKind, name="reaction_kind"), nullable=False)
+    type = Column(Enum(ReactionType, name="reaction_type"), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("post_id", "user_id", name="uq_reactions_post_user"),

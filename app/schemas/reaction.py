@@ -1,11 +1,11 @@
 import uuid
 from pydantic import BaseModel, Field
 
-from app.models.reaction import ReactionKind
+from app.models.reaction import ReactionType
 
 
 class ReactionBase(BaseModel):
-    kind: ReactionKind = Field(...)
+    type: ReactionType = Field(...)
 
 
 class ReactionSet(ReactionBase):
