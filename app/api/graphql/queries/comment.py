@@ -1,6 +1,6 @@
 import uuid
 import strawberry
-from typing import List
+from typing import List, Optional
 from strawberry.types import Info
 
 from app.api.graphql.types.comment import CommentType
@@ -21,3 +21,9 @@ class CommentQueries:
         db = info.context["db"]
         service = CommentService(db)
         return handle_service_call(service.count_comments, post_id)
+    
+    @strawberry.field
+    def get_comment(self, info: Info, comment_id: uuid.UUID) -> Optional[CommentType]:
+        db = info.context["db"]
+        service = CommentService(db)
+        return handle_service_call(service.get_comment, comment_id)

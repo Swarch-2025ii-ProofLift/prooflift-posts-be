@@ -1,8 +1,9 @@
 import uuid
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.comment import Comment
+from app.repositories.post_repository import PostRepository
 from app.repositories.comment_repository import CommentRepository
 from app.schemas.comment import CommentCreate, CommentUpdate
 from app.core.exceptions import NotFoundError, AuthorizationError
@@ -11,8 +12,14 @@ from app.core.exceptions import NotFoundError, AuthorizationError
 class CommentService:
     def __init__(self, db: Session):
         self.repo = CommentRepository(db)
+        self.post_repo = PostRepository(db)
+
+    def get_comment(self, comment_id: uuid.UUID) -> Optional[Comment]:
+        return self.repo.get(comment_id)
 
     def add_comment(self, user_id: uuid.UUID, comment_in: CommentCreate) -> Comment:
+        if not self.post_repo.get(comment_in.post_id):
+            raise NotFoundError("Post not found")
         return self.repo.create(user_id, comment_in)
 
     def list_comments(self, post_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[Comment]:

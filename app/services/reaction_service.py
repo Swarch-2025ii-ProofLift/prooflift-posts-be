@@ -3,15 +3,20 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.reaction import Reaction, ReactionKind
+from app.repositories.post_repository import PostRepository
 from app.repositories.reaction_repository import ReactionRepository
 from app.schemas.reaction import ReactionSet
+from app.core.exceptions import NotFoundError
 
 
 class ReactionService:
     def __init__(self, db: Session):
         self.repo = ReactionRepository(db)
+        self.post_repo = PostRepository(db)
 
     def set_reaction(self, user_id: uuid.UUID, reaction_in: ReactionSet) -> Reaction:
+        if not self.post_repo.get(reaction_in.post_id):
+            raise NotFoundError("Post not found")
         return self.repo.set_reaction(user_id, reaction_in)
 
     def remove_reaction(self, user_id: uuid.UUID, post_id: uuid.UUID) -> Optional[Reaction]:
