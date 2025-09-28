@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Dict
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
@@ -52,3 +52,47 @@ class ReactionRepository:
         if type is not None:
             stmt = stmt.where(Reaction.type == type)
         return self.db.scalar(stmt) or 0
+    
+    def count_for_posts(self, post_ids: List[uuid.UUID], type: Optional[ReactionType] = None) -> dict[uuid.UUID, int]:
+        if not post_ids:
+            return {}
+        
+        stmt = (
+            select(Reaction.post_id, func.count(Reaction.id))
+            .where(Reaction.post_id.in_(post_ids))
+        )
+        if type:
+            stmt = stmt.where(Reaction.type == type)
+
+        stmt = stmt.group_by(Reaction.post_id)
+        result = self.db.execute(stmt).all()
+
+        counts = {post_id: 0 for post_id in post_ids}
+        counts.update({post_id: count for post_id, count in result})
+        return counts
+    
+    def count_by_type_for_post(self, post_id: uuid.UUID) -> Dict[ReactionType, int]:
+        stmt = (
+            select(Reaction.type, func.count(Reaction.id))
+            .where(Reaction.post_id == post_id)
+            .group_by(Reaction.type)
+        )
+        result = self.db.execute(stmt).all()
+        return {reaction_type: count for reaction_type, count in result}
+    
+    def count_by_type_for_posts(self, post_ids: List[uuid.UUID]) -> Dict[uuid.UUID, Dict[ReactionType, int]]:
+        if not post_ids:
+            return {}
+        
+        stmt = (
+            select(Reaction.post_id, Reaction.type, func.count(Reaction.id))
+            .where(Reaction.post_id.in_(post_ids))
+            .group_by(Reaction.post_id, Reaction.type)
+        )
+        result = self.db.execute(stmt).all()
+
+        counts: Dict[uuid.UUID, Dict[ReactionType, int]] = {}
+        for post_id, reaction_type, count in result:
+            counts.setdefault(post_id, {})[reaction_type] = count
+        return counts
+

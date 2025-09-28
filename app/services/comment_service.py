@@ -27,6 +27,9 @@ class CommentService:
 
     def count_comments(self, post_id: uuid.UUID) -> int:
         return self.repo.count_for_post(post_id)
+    
+    def count_comments_batch(self, post_ids: List[uuid.UUID]) -> dict[uuid.UUID, int]:
+        return self.repo.count_for_posts(post_ids)
 
     def update_comment(self, comment_id: uuid.UUID, user_id: uuid.UUID, comment_in: CommentUpdate) -> Comment:
         db_obj = self.repo.get(comment_id)

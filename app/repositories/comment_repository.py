@@ -37,6 +37,21 @@ class CommentRepository:
 
     def count_for_post(self, post_id: uuid.UUID) -> int:
         return self.db.scalar(select(func.count()).select_from(Comment).where(Comment.post_id == post_id)) or 0
+    
+    def count_for_posts(self, post_ids: List[uuid.UUID]) -> dict[uuid.UUID, int]:
+        if not post_ids:
+            return {}
+
+        stmt = (
+            select(Comment.post_id, func.count(Comment.id))
+            .where(Comment.post_id.in_(post_ids))
+            .group_by(Comment.post_id)
+        )
+        result = self.db.execute(stmt).all()
+        
+        counts = {post_id: 0 for post_id in post_ids}
+        counts.update({post_id: count for post_id, count in result})
+        return counts
 
     def update(self, comment: Comment, comment_in: CommentUpdate) -> Comment:
         if comment_in.body is not None:

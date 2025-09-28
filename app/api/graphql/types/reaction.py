@@ -1,4 +1,3 @@
-import enum
 import uuid
 import strawberry
 from datetime import datetime
@@ -15,3 +14,8 @@ class ReactionObjectType:
 
     created_at: datetime
     updated_at: Optional[datetime]
+
+@strawberry.type
+class ReactionCountType:
+    type: ReactionType
+    count: int

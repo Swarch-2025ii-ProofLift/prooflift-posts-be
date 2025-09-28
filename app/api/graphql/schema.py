@@ -6,9 +6,10 @@ from app.api.graphql.queries.comment import CommentQueries
 from app.api.graphql.mutations.comment import CommentMutations
 from app.api.graphql.queries.reaction import ReactionQueries
 from app.api.graphql.mutations.reaction import ReactionMutations
+from app.api.graphql.queries.aggregated_post import AggregatedPostQueries
 
 @strawberry.type
-class Query(PostQueries, CommentQueries, ReactionQueries):
+class Query(PostQueries, CommentQueries, ReactionQueries, AggregatedPostQueries):
     pass
 
 @strawberry.type

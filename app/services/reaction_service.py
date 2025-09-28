@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Dict
 from sqlalchemy.orm import Session
 
 from app.models.reaction import Reaction, ReactionType
@@ -35,3 +35,12 @@ class ReactionService:
 
     def count_reactions(self, post_id: uuid.UUID, type: Optional[ReactionType] = None) -> int:
         return self.repo.count_for_post(post_id, type)
+    
+    def count_reactions_batch(self, post_ids: List[uuid.UUID], type: Optional[ReactionType] = None) -> dict[uuid.UUID, int]:
+        return self.repo.count_for_posts(post_ids, type)
+    
+    def count_reactions_by_type(self, post_id: uuid.UUID) -> Dict[ReactionType, int]:
+        return self.repo.count_by_type_for_post(post_id)
+    
+    def count_reactions_by_type_batch(self, post_ids: List[uuid.UUID]) -> Dict[uuid.UUID, Dict[ReactionType, int]]:
+        return self.repo.count_by_type_for_posts(post_ids)
