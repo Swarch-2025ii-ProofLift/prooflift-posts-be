@@ -18,6 +18,16 @@ class ReactionRepository:
         return self.db.scalar(
             select(Reaction).where(Reaction.user_id == user_id, Reaction.post_id == post_id)
         )
+    
+    def get_user_reactions(self, user_id: uuid.UUID, post_ids: List[uuid.UUID]) -> Dict[uuid.UUID, Reaction]:
+        query = select(Reaction).where(
+            Reaction.user_id == user_id,
+            Reaction.post_id.in_(post_ids)
+        )
+        result = self.db.execute(query).scalars().all()
+        
+        user_reactions = {reaction.post_id: reaction for reaction in result}
+        return user_reactions
 
     def set_reaction(self, user_id: uuid.UUID, reaction_in: ReactionSet) -> Reaction:
         db_obj = Reaction(

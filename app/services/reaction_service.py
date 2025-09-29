@@ -44,3 +44,9 @@ class ReactionService:
     
     def count_reactions_by_type_batch(self, post_ids: List[uuid.UUID]) -> Dict[uuid.UUID, Dict[ReactionType, int]]:
         return self.repo.count_by_type_for_posts(post_ids)
+    
+    def get_user_reactions(self, user_id: uuid.UUID, post_ids: List[uuid.UUID]) -> Dict[uuid.UUID, Reaction]:
+        return self.repo.get_user_reactions(user_id, post_ids)
+
+    def get_user_reaction(self, user_id: uuid.UUID, post_id: uuid.UUID) -> Optional[Reaction]:
+        return self.repo.get_for_user_post(user_id, post_id)
