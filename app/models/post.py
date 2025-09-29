@@ -15,4 +15,4 @@ class Post(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     body = Column(Text, nullable=False)  
-    exercise_ids = Column(ARRAY(UUID(as_uuid=True)), default=[])
+    exercise_ids = Column(ARRAY(Text), default=[])

@@ -8,7 +8,7 @@ class PostType:
     id: uuid.UUID
     user_id: uuid.UUID
     body: str
-    exercise_ids: List[uuid.UUID]
+    exercise_ids: List[str]
 
     created_at: datetime
     updated_at: Optional[datetime]
