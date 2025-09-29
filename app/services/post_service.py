@@ -20,8 +20,11 @@ class PostService:
     def list_posts(self, skip: int = 0, limit: int = 100) -> List[Post]:
         return self.repo.get_all(skip=skip, limit=limit)
 
-    def list_posts_by_user(self, user_id: uuid.UUID) -> List[Post]:
-        return self.repo.get_by_user(user_id)
+    def list_posts_by_user(self, user_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[Post]:
+        return self.repo.get_by_user(user_id, skip=skip, limit=limit)
+    
+    def count_posts_by_user(self, user_id: uuid.UUID) -> int:
+        return self.repo.count_by_user(user_id)
 
     def update_post(self, post_id: uuid.UUID, user_id: uuid.UUID, post_in: PostUpdate) -> Post:
         db_post = self.repo.get(post_id)
@@ -41,5 +44,4 @@ class PostService:
         if db_post.user_id != user_id:
             raise AuthorizationError("You are not allowed to delete this post")
         
-        self.repo.delete(db_post)
-        return db_post
+        return self.repo.delete(db_post)

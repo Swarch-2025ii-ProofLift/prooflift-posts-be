@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import select
+from sqlalchemy import select, func
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
@@ -29,9 +29,12 @@ class PostRepository:
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Post]:
         return self.db.scalars(select(Post).order_by(Post.created_at.desc()).offset(skip).limit(limit)).all()
 
-    def get_by_user(self, user_id: uuid.UUID) -> List[Post]:
-        return self.db.scalars(select(Post).where(Post.user_id == user_id)).all()
-
+    def get_by_user(self, user_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[Post]:
+        return self.db.scalars(select(Post).where(Post.user_id == user_id).order_by(Post.created_at.desc()).offset(skip).limit(limit)).all()
+    
+    def count_by_user(self, user_id: uuid.UUID) -> int:
+        return self.db.scalar(select(func.count()).select_from(Post).where(Post.user_id == user_id)) or 0
+    
     def update(self, post: Post, post_in: PostUpdate) -> Post:
         if post_in.body is not None:
             post.body = post_in.body
@@ -43,6 +46,8 @@ class PostRepository:
         
         return post
 
-    def delete(self, post: Post) -> None:
+    def delete(self, post: Post) -> Post:
         self.db.delete(post)
         self.db.commit()
+
+        return post

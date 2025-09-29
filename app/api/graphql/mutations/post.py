@@ -12,7 +12,7 @@ from app.utils.graphql_helpers import handle_service_call
 @strawberry.type
 class PostMutations:
     @strawberry.mutation
-    def create_post(self, info: Info, body: str, exercise_ids: Optional[list[uuid.UUID]] = None) -> PostType:
+    def create_post(self, info: Info, body: str, exercise_ids: Optional[list[str]] = None) -> PostType:
         db = info.context["db"]
         user_id = info.context.get("user_id")
 
@@ -26,7 +26,7 @@ class PostMutations:
 
     @strawberry.mutation
     def update_post(self, info: Info, post_id: uuid.UUID, body: Optional[str] = None,
-        exercise_ids: Optional[list[uuid.UUID]] = None) -> PostType:
+        exercise_ids: Optional[list[str]] = None) -> PostType:
         db = info.context["db"]
         user_id = info.context.get("user_id")
 

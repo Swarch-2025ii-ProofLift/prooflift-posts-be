@@ -22,3 +22,17 @@ class PostQueries:
         service = PostService(db)
 
         return handle_service_call(service.list_posts, skip, limit)
+    
+    @strawberry.field
+    def get_posts_by_user(self, info: Info, user_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[PostType]:
+        db = info.context["db"]
+        service = PostService(db)
+
+        return handle_service_call(service.list_posts_by_user, user_id, skip, limit)
+    
+    @strawberry.field
+    def count_posts_by_user(self, info: Info, user_id: uuid.UUID) -> int:
+        db = info.context["db"]
+        service = PostService(db)
+
+        return handle_service_call(service.count_posts_by_user, user_id)
