@@ -1,10 +1,21 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    app_name: str = "ProofLift - Posts Service"
-    debug: bool = True
+    PROJECT_NAME: str = "ProofLift - Posting Service"
 
-    class Config:
-        env_file = ".env"
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_NAME: str
+    DB_PORT: int = 5432
+    DB_DRIVERNAME: str = "postgresql+psycopg"
+
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str
+
+    model_config = SettingsConfigDict(  
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
 
 settings = Settings()
