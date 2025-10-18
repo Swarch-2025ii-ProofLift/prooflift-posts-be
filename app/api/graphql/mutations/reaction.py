@@ -17,9 +17,10 @@ class ReactionMutations:
     def set_reaction(self, info: Info, post_id: uuid.UUID, type: ReactionType) -> ReactionObjectType:
         db = info.context["db"]
         user_id = info.context.get("user_id")
+        mq_channel = info.context.get("mq_channel")
         if not user_id:
             raise AuthenticationError()
-        service = ReactionService(db)
+        service = ReactionService(db, mq_channel)
         reaction_in = ReactionSet(post_id=post_id, type=type)
         return handle_service_call(service.set_reaction, user_id, reaction_in)
 

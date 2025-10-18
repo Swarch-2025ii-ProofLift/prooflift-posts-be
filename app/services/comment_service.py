@@ -1,4 +1,6 @@
+import pika
 import uuid
+import logging
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
@@ -7,20 +9,39 @@ from app.repositories.post_repository import PostRepository
 from app.repositories.comment_repository import CommentRepository
 from app.schemas.comment import CommentCreate, CommentUpdate
 from app.core.exceptions import NotFoundError, AuthorizationError
+from app.events.events import NotificationEventPublisher
 
+logger = logging.getLogger(__name__)
 
 class CommentService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, mq_channel: Optional[pika.channel.Channel] = None):
         self.repo = CommentRepository(db)
         self.post_repo = PostRepository(db)
+        self.mq_channel = mq_channel
 
     def get_comment(self, comment_id: uuid.UUID) -> Optional[Comment]:
         return self.repo.get(comment_id)
 
     def add_comment(self, user_id: uuid.UUID, comment_in: CommentCreate) -> Comment:
-        if not self.post_repo.get(comment_in.post_id):
+        post = self.post_repo.get(comment_in.post_id)
+        if not post:
             raise NotFoundError("Post not found")
-        return self.repo.create(user_id, comment_in)
+
+        comment = self.repo.create(user_id, comment_in)
+
+        if self.mq_channel:
+            try:
+                NotificationEventPublisher.publish_comment_created(
+                    channel=self.mq_channel,
+                    post_owner_id=post.user_id,
+                    commenter_id=user_id,
+                    post_id=post.id,
+                    comment_id=comment.id
+                )
+            except Exception as e:
+                logger.error(f"Failed to publish comment notification: {e}")
+
+        return comment
 
     def list_comments(self, post_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[Comment]:
         return self.repo.list_for_post(post_id, skip=skip, limit=limit)

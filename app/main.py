@@ -1,4 +1,6 @@
 import uvicorn
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, Request
 from strawberry.fastapi import GraphQLRouter
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,8 +10,36 @@ from app.api.graphql.schema import schema
 from app.db.session import get_db, Base, engine
 from app.core.exceptions import AuthenticationError
 from app.core.security import get_user_id_from_token
+from app.mq.message_queue import mq_connection
 
-Base.metadata.create_all(bind=engine)
+logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting...")
+
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created/verified")
+
+    try:
+        mq_connection.connect()
+        logger.info("MQ connection established")
+    except Exception as e:
+        logger.warning(f"MQ connection failed: {e}")
+
+    logger.info("Startup complete")
+
+    yield
+
+    logger.info("Shutting down...")
+
+    mq_connection.close()
+    logger.info("MQ connection closed")
+
+    engine.dispose()
+    logger.info("Database engine disposed")
+
+    logger.info("Application shutdown complete")
 
 async def get_context(request: Request, db=Depends(get_db)):
     user_id = None
@@ -22,15 +52,22 @@ async def get_context(request: Request, db=Depends(get_db)):
         except AuthenticationError:
             pass
 
-    return {"db": db, "user_id": user_id}
+    mq_channel = None
+    try:
+        mq_channel = mq_connection.get_channel()
+    except Exception as e:
+        logger.warning(f"MQ not available: {e}")
+
+    return {"db": db, "user_id": user_id, "mq_channel": mq_channel}
 
 graphql_app = GraphQLRouter(
-    schema, 
+    schema,
     context_getter=get_context
 )
 
 app = FastAPI(
-    title=settings.PROJECT_NAME
+    title=settings.PROJECT_NAME,
+    lifespan=lifespan
 )
 
 app.add_middleware(

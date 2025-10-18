@@ -1,4 +1,6 @@
+import pika
 import uuid
+import logging
 from typing import List, Optional, Dict
 from sqlalchemy.orm import Session
 
@@ -7,22 +9,42 @@ from app.repositories.post_repository import PostRepository
 from app.repositories.reaction_repository import ReactionRepository
 from app.schemas.reaction import ReactionSet
 from app.core.exceptions import NotFoundError
+from app.events.events import NotificationEventPublisher
 
+logger = logging.getLogger(__name__)
 
 class ReactionService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, mq_channel: Optional[pika.channel.Channel] = None):
         self.repo = ReactionRepository(db)
         self.post_repo = PostRepository(db)
+        self.mq_channel = mq_channel
 
     def set_reaction(self, user_id: uuid.UUID, reaction_in: ReactionSet) -> Reaction:
-        if not self.post_repo.get(reaction_in.post_id):
+        post = self.post_repo.get(reaction_in.post_id)
+        if not post:
             raise NotFoundError("Post not found")
-        
+
         existing = self.repo.get_for_user_post(user_id, reaction_in.post_id)
-        
+
+        is_new_reaction = existing is None
+
         if existing:
-            return self.repo.update_reaction(existing, reaction_in.type)
-        return self.repo.set_reaction(user_id, reaction_in)
+            reaction = self.repo.update_reaction(existing, reaction_in.type)
+        else:
+            reaction = self.repo.set_reaction(user_id, reaction_in)
+
+        if is_new_reaction and self.mq_channel:
+            try:
+                NotificationEventPublisher.publish_reaction_added(
+                    channel=self.mq_channel,
+                    post_owner_id=post.user_id,
+                    reactor_id=user_id,
+                    post_id=post.id
+                )
+            except Exception as e:
+                logger.error(f"Failed to publish reaction notification: {e}")
+
+        return reaction
 
     def remove_reaction(self, user_id: uuid.UUID, post_id: uuid.UUID) -> Optional[Reaction]:
         existing = self.repo.get_for_user_post(user_id, post_id)
