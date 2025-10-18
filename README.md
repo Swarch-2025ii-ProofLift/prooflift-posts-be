@@ -33,9 +33,10 @@ When running locally set:
 
 ```
 DB_HOST=localhost
+MQ_HOST=localhost
 ```
 
-This ensures the service connects to your locally installed PostgreSQL instance.
+This ensures the service connects to your locally installed PostgreSQL instance and RabbitMQ server.
 
 #### 5. Run the service locally
 ```bash
@@ -53,13 +54,14 @@ cd prooflift-posts-be
 #### 2. Set up environment variables
 Create a `.env` file in the root of the project using `.env.example` as a template.
 
-When running the service with Docker, the database host should point to the database service defined in `docker-compose.yml`:
+When running the service with Docker, the database and message queue hosts should point to the services defined in `docker-compose.yml`:
 
 ```
 DB_HOST=prooflift-posts-db
+MQ_HOST=prooflift-notifications-mq
 ```
 
-This ensures the service connects to the Postgres container inside the Docker network.
+This ensures the service connects to the Postgres and RabbitMQ containers inside the Docker network.
 
 #### 3. Build and run with Docker Compose
 ```bash
@@ -71,6 +73,14 @@ docker-compose up --build
 The API will be available at (both locally and with Docker)
 - GraphQL Playground: `http://localhost:8000/graphql`
 - Status check: `http://localhost:8000`
+
+## Message Queue Integration
+
+This service publishes notification events to a RabbitMQ message queue when users interact with posts:
+- **Comment events**: Notifies post owners when someone comments on their post
+- **Reaction events**: Notifies post owners when someone reacts to their post
+
+The MQ connection is configured via environment variables (`MQ_HOST`, `MQ_PORT`, `MQ_USER`, `MQ_PASSWORD`, `MQ_QUEUE`).
 
 ## Project Structure
 ```
@@ -85,7 +95,11 @@ app/
 │
 ├── db/                     # Database configuration
 │
+├── events/                 # Event publishing
+│
 ├── models/                 # Database models
+│
+├── mq/                     # Message queue connection
 │
 ├── repositories/           # Data access
 │

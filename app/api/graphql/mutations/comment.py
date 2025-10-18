@@ -15,9 +15,10 @@ class CommentMutations:
     def add_comment(self, info: Info, post_id: uuid.UUID, body: str) -> CommentType:
         db = info.context["db"]
         user_id = info.context.get("user_id")
+        mq_channel = info.context.get("mq_channel")
         if not user_id:
             raise AuthenticationError()
-        service = CommentService(db)
+        service = CommentService(db, mq_channel)
         comment_in = CommentCreate(post_id=post_id, body=body)
         return handle_service_call(service.add_comment, user_id, comment_in)
 

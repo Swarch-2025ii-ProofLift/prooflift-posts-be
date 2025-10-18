@@ -13,7 +13,13 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
 
-    model_config = SettingsConfigDict(  
+    MQ_HOST: str
+    MQ_PORT: int = 5672
+    MQ_USER: str
+    MQ_PASSWORD: str
+    MQ_QUEUE: str = "notifications_queue"
+
+    model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
     )
