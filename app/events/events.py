@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 class NotificationEventType(str, Enum):
     COMMENT_CREATED = "COMMENT_CREATED"
     REACTION_ADDED = "REACTION_ADDED"
+    COMMENT_DELETED = "COMMENT_DELETED"
+    REACTION_REMOVED = "REACTION_REMOVED"
 
 class NotificationEventPublisher:
     @staticmethod
@@ -55,6 +57,50 @@ class NotificationEventPublisher:
             "actor_id": str(reactor_id),
             "post_id": str(post_id),
             "message": f"{reactor_id} reacted to your post."
+        }
+
+        return NotificationEventPublisher._publish_event(channel, event)
+
+    @staticmethod
+    def publish_comment_deleted(
+        channel: pika.channel.Channel,
+        comment_id: uuid.UUID,
+        post_id: uuid.UUID,
+        actor_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> bool:
+
+        if user_id == actor_id:
+            logger.debug(f"Skipping self-notification: user {actor_id} deleted comment on own post")
+            return True
+
+        event = {
+            "type": NotificationEventType.COMMENT_DELETED.value,
+            "comment_id": str(comment_id),
+            "post_id": str(post_id),
+            "actor_id": str(actor_id),
+            "user_id": str(user_id),
+        }
+
+        return NotificationEventPublisher._publish_event(channel, event)
+
+    @staticmethod
+    def publish_reaction_removed(
+        channel: pika.channel.Channel,
+        post_id: uuid.UUID,
+        actor_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> bool:
+
+        if user_id == actor_id:
+            logger.debug(f"Skipping self-notification: user {actor_id} removed reaction on own post")
+            return True
+
+        event = {
+            "type": NotificationEventType.REACTION_REMOVED.value,
+            "post_id": str(post_id),
+            "actor_id": str(actor_id),
+            "user_id": str(user_id),
         }
 
         return NotificationEventPublisher._publish_event(channel, event)
