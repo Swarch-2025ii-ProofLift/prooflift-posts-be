@@ -36,7 +36,8 @@ class CommentMutations:
     def delete_comment(self, info: Info, comment_id: uuid.UUID) -> CommentType:
         db = info.context["db"]
         user_id = info.context.get("user_id")
+        mq_channel = info.context.get("mq_channel")
         if not user_id:
             raise AuthenticationError()
-        service = CommentService(db)
+        service = CommentService(db, mq_channel)
         return handle_service_call(service.delete_comment, comment_id, user_id)

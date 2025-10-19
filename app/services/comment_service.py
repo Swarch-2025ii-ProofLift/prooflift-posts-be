@@ -66,4 +66,21 @@ class CommentService:
             raise NotFoundError("Comment not found")
         if db_obj.user_id != user_id:
             raise AuthorizationError("You are not allowed to delete this comment")
-        return self.repo.delete(db_obj)
+
+        post = self.post_repo.get(db_obj.post_id)
+
+        result = self.repo.delete(db_obj)
+
+        if self.mq_channel and post:
+            try:
+                NotificationEventPublisher.publish_comment_deleted(
+                    channel=self.mq_channel,
+                    comment_id=comment_id,
+                    post_id=db_obj.post_id,
+                    actor_id=user_id,
+                    user_id=post.user_id
+                )
+            except Exception as e:
+                logger.error(f"Failed to publish comment deletion notification: {e}")
+
+        return result

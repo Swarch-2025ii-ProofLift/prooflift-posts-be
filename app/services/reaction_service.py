@@ -50,7 +50,23 @@ class ReactionService:
         existing = self.repo.get_for_user_post(user_id, post_id)
         if not existing:
             return None
-        return self.repo.remove_reaction(existing)
+
+        post = self.post_repo.get(post_id)
+
+        result = self.repo.remove_reaction(existing)
+
+        if self.mq_channel and post:
+            try:
+                NotificationEventPublisher.publish_reaction_removed(
+                    channel=self.mq_channel,
+                    post_id=post_id,
+                    actor_id=user_id,
+                    user_id=post.user_id
+                )
+            except Exception as e:
+                logger.error(f"Failed to publish reaction removal notification: {e}")
+
+        return result
 
     def list_reactions(self, post_id: uuid.UUID, type: Optional[ReactionType] = None) -> List[Reaction]:
         return self.repo.list_for_post(post_id, type)

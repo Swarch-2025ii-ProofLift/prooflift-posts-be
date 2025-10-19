@@ -28,7 +28,8 @@ class ReactionMutations:
     def remove_reaction(self, info: Info, post_id: uuid.UUID) -> Optional[ReactionObjectType]:
         db = info.context["db"]
         user_id = info.context.get("user_id")
+        mq_channel = info.context.get("mq_channel")
         if not user_id:
             raise AuthenticationError()
-        service = ReactionService(db)
+        service = ReactionService(db, mq_channel)
         return handle_service_call(service.remove_reaction, user_id, post_id)
