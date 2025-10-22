@@ -34,7 +34,7 @@ class NotificationEventPublisher:
             "actor_id": str(commenter_id),
             "post_id": str(post_id),
             "comment_id": str(comment_id),
-            "message": f"{comment_id} commented on your post."
+            "message": f"{comment_id} comentó tu publicación."
         }
 
         return NotificationEventPublisher._publish_event(channel, event)
@@ -56,7 +56,7 @@ class NotificationEventPublisher:
             "user_id": str(post_owner_id),
             "actor_id": str(reactor_id),
             "post_id": str(post_id),
-            "message": f"{reactor_id} reacted to your post."
+            "message": f"{reactor_id} reaccionó a tu publicación."
         }
 
         return NotificationEventPublisher._publish_event(channel, event)
