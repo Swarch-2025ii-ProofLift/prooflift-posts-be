@@ -43,10 +43,16 @@ async def lifespan(app: FastAPI):
 
 async def get_context(request: Request, db=Depends(get_db)):
     user_id = None
+    token = None
 
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1]
+    
+    if not token:
+        token = request.cookies.get("access_token")
+    
+    if token:
         try:
             user_id = get_user_id_from_token(token)
         except AuthenticationError:
