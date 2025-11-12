@@ -57,12 +57,10 @@ class AggregatedPostQueries:
             comment_service = CommentService(db)
             reaction_service = ReactionService(db)
 
-            post, total_comments, reactions_by_type, user_reaction = await asyncio.gather(
-                handle_service_call_async(post_service.get_post, post_id),
-                handle_service_call_async(comment_service.count_comments, post_id),
-                handle_service_call_async(reaction_service.count_reactions_by_type, post_id),
-                handle_service_call_async(reaction_service.get_user_reaction, user_id, post_id)
-            )
+            post = await handle_service_call_async(post_service.get_post, post_id)
+            total_comments = await handle_service_call_async(comment_service.count_comments, post_id)
+            reactions_by_type = await handle_service_call_async(reaction_service.count_reactions_by_type, post_id)
+            user_reaction = await handle_service_call_async(reaction_service.get_user_reaction, user_id, post_id)
 
             return AggregatedPostType(
                         post=post,
