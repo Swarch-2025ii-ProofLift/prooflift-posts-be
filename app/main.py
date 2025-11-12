@@ -1,9 +1,12 @@
 import uvicorn
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, Request
+from fastapi.responses import JSONResponse
 from strawberry.fastapi import GraphQLRouter
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
 from app.api.graphql.schema import schema
@@ -13,6 +16,17 @@ from app.core.security import get_user_id_from_token
 from app.mq.message_queue import mq_connection
 
 logger = logging.getLogger(__name__)
+
+class TimeoutMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        try:
+            return await asyncio.wait_for(call_next(request), timeout=55.0)
+        except asyncio.TimeoutError:
+            logger.error(f"Request timeout: {request.method} {request.url.path}")
+            return JSONResponse(
+                status_code=504,
+                content={"detail": "Request timeout"}
+            )
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -77,6 +91,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_middleware(TimeoutMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
