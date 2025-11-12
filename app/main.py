@@ -10,7 +10,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
 from app.api.graphql.schema import schema
-from app.db.session import get_db, Base, engine
+from app.db.session import Base, engine
+from app.db.session_manager import DBSessionManager
 from app.core.exceptions import AuthenticationError
 from app.core.security import get_user_id_from_token
 from app.mq.message_queue import mq_connection
@@ -56,7 +57,7 @@ async def lifespan(app: FastAPI):
 
     logger.info("Application shutdown complete")
 
-async def get_context(request: Request, db=Depends(get_db)):
+async def get_context(request: Request):
     user_id = None
     token = None
 
@@ -79,7 +80,9 @@ async def get_context(request: Request, db=Depends(get_db)):
     except Exception as e:
         logger.warning(f"MQ not available: {e}")
 
-    return {"db": db, "user_id": user_id, "mq_channel": mq_channel}
+    session_manager = DBSessionManager()
+
+    return {"session_manager": session_manager, "user_id": user_id, "mq_channel": mq_channel}
 
 graphql_app = GraphQLRouter(
     schema,

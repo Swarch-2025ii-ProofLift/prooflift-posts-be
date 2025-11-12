@@ -16,60 +16,60 @@ from app.core.exceptions import AuthenticationError
 class AggregatedPostQueries:
     @strawberry.field
     async def get_aggregated_post(self, info: Info, skip: int = 0, limit: int = 100) -> List[AggregatedPostType]:
-        db = info.context["db"]
+        session_manager = info.context["session_manager"]
         user_id = info.context.get("user_id")
         if not user_id:
             raise AuthenticationError()
 
-        post_service = PostService(db)
-        comment_service = CommentService(db)
-        reaction_service = ReactionService(db)
+        async with session_manager.get_session() as db:
+            post_service = PostService(db)
+            comment_service = CommentService(db)
+            reaction_service = ReactionService(db)
 
-        posts = await handle_service_call_async(post_service.list_posts, skip, limit)
-        post_ids = [post.id for post in posts]
+            posts = await handle_service_call_async(post_service.list_posts, skip, limit)
+            post_ids = [post.id for post in posts]
 
-        total_comments, reactions_by_type, user_reactions = await asyncio.gather(
-            handle_service_call_async(comment_service.count_comments_batch, post_ids),
-            handle_service_call_async(reaction_service.count_reactions_by_type_batch, post_ids),
-            handle_service_call_async(reaction_service.get_user_reactions, user_id, post_ids)
-        )
+            total_comments = await handle_service_call_async(comment_service.count_comments_batch, post_ids)
+            reactions_by_type = await handle_service_call_async(reaction_service.count_reactions_by_type_batch, post_ids)
+            user_reactions = await handle_service_call_async(reaction_service.get_user_reactions, user_id, post_ids)
 
-        return [
-            AggregatedPostType(
-                post=post,
-                total_comments=total_comments.get(post.id, 0),
-                reactions_by_type=[
-                    ReactionCountType(type=reaction_type, count=count)
-                    for reaction_type, count in reactions_by_type.get(post.id, {}).items()
-                ],
-                current_user_reaction=user_reactions.get(post.id)
-            ) for post in posts
-        ]
+            return [
+                AggregatedPostType(
+                    post=post,
+                    total_comments=total_comments.get(post.id, 0),
+                    reactions_by_type=[
+                        ReactionCountType(type=reaction_type, count=count)
+                        for reaction_type, count in reactions_by_type.get(post.id, {}).items()
+                    ],
+                    current_user_reaction=user_reactions.get(post.id)
+                ) for post in posts
+            ]
     
     @strawberry.field
     async def get_aggregated_post_by_id(self, info: Info, post_id: uuid.UUID) -> AggregatedPostType:
-        db = info.context["db"]
+        session_manager = info.context["session_manager"]
         user_id = info.context["user_id"]
         if not user_id:
             raise AuthenticationError()
 
-        post_service = PostService(db)
-        comment_service = CommentService(db)
-        reaction_service = ReactionService(db)
+        async with session_manager.get_session() as db:
+            post_service = PostService(db)
+            comment_service = CommentService(db)
+            reaction_service = ReactionService(db)
 
-        post, total_comments, reactions_by_type, user_reaction = await asyncio.gather(
-            handle_service_call_async(post_service.get_post, post_id),
-            handle_service_call_async(comment_service.count_comments, post_id),
-            handle_service_call_async(reaction_service.count_reactions_by_type, post_id),
-            handle_service_call_async(reaction_service.get_user_reaction, user_id, post_id)
-        )
+            post, total_comments, reactions_by_type, user_reaction = await asyncio.gather(
+                handle_service_call_async(post_service.get_post, post_id),
+                handle_service_call_async(comment_service.count_comments, post_id),
+                handle_service_call_async(reaction_service.count_reactions_by_type, post_id),
+                handle_service_call_async(reaction_service.get_user_reaction, user_id, post_id)
+            )
 
-        return AggregatedPostType(
-                    post=post,
-                    total_comments=total_comments,
-                    reactions_by_type=[
-                        ReactionCountType(type=reaction_type, count=count)
-                        for reaction_type, count in reactions_by_type.items()
-                    ],
-                    current_user_reaction=user_reaction
-                )
+            return AggregatedPostType(
+                        post=post,
+                        total_comments=total_comments,
+                        reactions_by_type=[
+                            ReactionCountType(type=reaction_type, count=count)
+                            for reaction_type, count in reactions_by_type.items()
+                        ],
+                        current_user_reaction=user_reaction
+                    )

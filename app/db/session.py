@@ -45,10 +45,9 @@ async def get_db():
     session = AsyncSessionLocal()
     try:
         yield session
-        if session.in_transaction():
-            await session.commit()
     except Exception:
-        await session.rollback()
+        if session.in_transaction():
+            await session.rollback()
         raise
     finally:
         await session.close()
