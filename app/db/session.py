@@ -1,5 +1,6 @@
-from sqlalchemy import create_engine, URL
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import URL
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
 
@@ -12,15 +13,36 @@ db_uri = URL.create(
     database=settings.DB_NAME,
 )
 
-engine = create_engine(db_uri, echo=False)
+engine = create_async_engine(
+    db_uri,
+    echo=False,
+    pool_size=10,
+    max_overflow=15,
+    pool_timeout=30,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    connect_args={
+        "command_timeout": 60,
+        "server_settings": {
+            "application_name": "prooflift_posts",
+            "jit": "off"
+        }
+    }
+)
 
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    autoflush=False,
+    autocommit=False,
+    expire_on_commit=False,
+)
 
 Base = declarative_base()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()

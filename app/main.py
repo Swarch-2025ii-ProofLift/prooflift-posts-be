@@ -18,11 +18,12 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Starting...")
 
-    Base.metadata.create_all(bind=engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created/verified")
 
     try:
-        mq_connection.connect()
+        await mq_connection.connect()
         logger.info("MQ connection established")
     except Exception as e:
         logger.warning(f"MQ connection failed: {e}")
@@ -33,10 +34,10 @@ async def lifespan(app: FastAPI):
 
     logger.info("Shutting down...")
 
-    mq_connection.close()
+    await mq_connection.close()
     logger.info("MQ connection closed")
 
-    engine.dispose()
+    await engine.dispose()
     logger.info("Database engine disposed")
 
     logger.info("Application shutdown complete")
@@ -48,10 +49,10 @@ async def get_context(request: Request, db=Depends(get_db)):
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1]
-    
+
     if not token:
         token = request.cookies.get("access_token")
-    
+
     if token:
         try:
             user_id = get_user_id_from_token(token)
@@ -60,7 +61,7 @@ async def get_context(request: Request, db=Depends(get_db)):
 
     mq_channel = None
     try:
-        mq_channel = mq_connection.get_channel()
+        mq_channel = await mq_connection.get_channel()
     except Exception as e:
         logger.warning(f"MQ not available: {e}")
 

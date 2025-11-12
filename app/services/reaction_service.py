@@ -1,8 +1,8 @@
-import pika
+import aio_pika
 import uuid
 import logging
 from typing import List, Optional, Dict
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.reaction import Reaction, ReactionType
 from app.repositories.post_repository import PostRepository
@@ -14,28 +14,28 @@ from app.events.events import NotificationEventPublisher
 logger = logging.getLogger(__name__)
 
 class ReactionService:
-    def __init__(self, db: Session, mq_channel: Optional[pika.channel.Channel] = None):
+    def __init__(self, db: AsyncSession, mq_channel: Optional[aio_pika.Channel] = None):
         self.repo = ReactionRepository(db)
         self.post_repo = PostRepository(db)
         self.mq_channel = mq_channel
 
-    def set_reaction(self, user_id: uuid.UUID, reaction_in: ReactionSet) -> Reaction:
-        post = self.post_repo.get(reaction_in.post_id)
+    async def set_reaction(self, user_id: uuid.UUID, reaction_in: ReactionSet) -> Reaction:
+        post = await self.post_repo.get(reaction_in.post_id)
         if not post:
             raise NotFoundError("Post not found")
 
-        existing = self.repo.get_for_user_post(user_id, reaction_in.post_id)
+        existing = await self.repo.get_for_user_post(user_id, reaction_in.post_id)
 
         is_new_reaction = existing is None
 
         if existing:
-            reaction = self.repo.update_reaction(existing, reaction_in.type)
+            reaction = await self.repo.update_reaction(existing, reaction_in.type)
         else:
-            reaction = self.repo.set_reaction(user_id, reaction_in)
+            reaction = await self.repo.set_reaction(user_id, reaction_in)
 
         if is_new_reaction and self.mq_channel:
             try:
-                NotificationEventPublisher.publish_reaction_added(
+                await NotificationEventPublisher.publish_reaction_added(
                     channel=self.mq_channel,
                     post_owner_id=post.user_id,
                     reactor_id=user_id,
@@ -46,18 +46,18 @@ class ReactionService:
 
         return reaction
 
-    def remove_reaction(self, user_id: uuid.UUID, post_id: uuid.UUID) -> Optional[Reaction]:
-        existing = self.repo.get_for_user_post(user_id, post_id)
+    async def remove_reaction(self, user_id: uuid.UUID, post_id: uuid.UUID) -> Optional[Reaction]:
+        existing = await self.repo.get_for_user_post(user_id, post_id)
         if not existing:
             return None
 
-        post = self.post_repo.get(post_id)
+        post = await self.post_repo.get(post_id)
 
-        result = self.repo.remove_reaction(existing)
+        result = await self.repo.remove_reaction(existing)
 
         if self.mq_channel and post:
             try:
-                NotificationEventPublisher.publish_reaction_removed(
+                await NotificationEventPublisher.publish_reaction_removed(
                     channel=self.mq_channel,
                     post_id=post_id,
                     actor_id=user_id,
@@ -68,23 +68,23 @@ class ReactionService:
 
         return result
 
-    def list_reactions(self, post_id: uuid.UUID, type: Optional[ReactionType] = None) -> List[Reaction]:
-        return self.repo.list_for_post(post_id, type)
+    async def list_reactions(self, post_id: uuid.UUID, type: Optional[ReactionType] = None) -> List[Reaction]:
+        return await self.repo.list_for_post(post_id, type)
 
-    def count_reactions(self, post_id: uuid.UUID, type: Optional[ReactionType] = None) -> int:
-        return self.repo.count_for_post(post_id, type)
-    
-    def count_reactions_batch(self, post_ids: List[uuid.UUID], type: Optional[ReactionType] = None) -> dict[uuid.UUID, int]:
-        return self.repo.count_for_posts(post_ids, type)
-    
-    def count_reactions_by_type(self, post_id: uuid.UUID) -> Dict[ReactionType, int]:
-        return self.repo.count_by_type_for_post(post_id)
-    
-    def count_reactions_by_type_batch(self, post_ids: List[uuid.UUID]) -> Dict[uuid.UUID, Dict[ReactionType, int]]:
-        return self.repo.count_by_type_for_posts(post_ids)
-    
-    def get_user_reactions(self, user_id: uuid.UUID, post_ids: List[uuid.UUID]) -> Dict[uuid.UUID, Reaction]:
-        return self.repo.get_user_reactions(user_id, post_ids)
+    async def count_reactions(self, post_id: uuid.UUID, type: Optional[ReactionType] = None) -> int:
+        return await self.repo.count_for_post(post_id, type)
 
-    def get_user_reaction(self, user_id: uuid.UUID, post_id: uuid.UUID) -> Optional[Reaction]:
-        return self.repo.get_for_user_post(user_id, post_id)
+    async def count_reactions_batch(self, post_ids: List[uuid.UUID], type: Optional[ReactionType] = None) -> dict[uuid.UUID, int]:
+        return await self.repo.count_for_posts(post_ids, type)
+
+    async def count_reactions_by_type(self, post_id: uuid.UUID) -> Dict[ReactionType, int]:
+        return await self.repo.count_by_type_for_post(post_id)
+
+    async def count_reactions_by_type_batch(self, post_ids: List[uuid.UUID]) -> Dict[uuid.UUID, Dict[ReactionType, int]]:
+        return await self.repo.count_by_type_for_posts(post_ids)
+
+    async def get_user_reactions(self, user_id: uuid.UUID, post_ids: List[uuid.UUID]) -> Dict[uuid.UUID, Reaction]:
+        return await self.repo.get_user_reactions(user_id, post_ids)
+
+    async def get_user_reaction(self, user_id: uuid.UUID, post_id: uuid.UUID) -> Optional[Reaction]:
+        return await self.repo.get_for_user_post(user_id, post_id)

@@ -1,4 +1,4 @@
-import pika
+import aio_pika
 import json
 import logging
 import uuid
@@ -16,8 +16,8 @@ class NotificationEventType(str, Enum):
 
 class NotificationEventPublisher:
     @staticmethod
-    def publish_comment_created(
-        channel: pika.channel.Channel,
+    async def publish_comment_created(
+        channel: aio_pika.Channel,
         post_owner_id: uuid.UUID,
         commenter_id: uuid.UUID,
         post_id: uuid.UUID,
@@ -37,11 +37,11 @@ class NotificationEventPublisher:
             "message": f"{comment_id} comentó tu publicación."
         }
 
-        return NotificationEventPublisher._publish_event(channel, event)
+        return await NotificationEventPublisher._publish_event(channel, event)
 
     @staticmethod
-    def publish_reaction_added(
-        channel: pika.channel.Channel,
+    async def publish_reaction_added(
+        channel: aio_pika.Channel,
         post_owner_id: uuid.UUID,
         reactor_id: uuid.UUID,
         post_id: uuid.UUID,
@@ -59,11 +59,11 @@ class NotificationEventPublisher:
             "message": f"{reactor_id} reaccionó a tu publicación."
         }
 
-        return NotificationEventPublisher._publish_event(channel, event)
+        return await NotificationEventPublisher._publish_event(channel, event)
 
     @staticmethod
-    def publish_comment_deleted(
-        channel: pika.channel.Channel,
+    async def publish_comment_deleted(
+        channel: aio_pika.Channel,
         comment_id: uuid.UUID,
         post_id: uuid.UUID,
         actor_id: uuid.UUID,
@@ -82,11 +82,11 @@ class NotificationEventPublisher:
             "user_id": str(user_id),
         }
 
-        return NotificationEventPublisher._publish_event(channel, event)
+        return await NotificationEventPublisher._publish_event(channel, event)
 
     @staticmethod
-    def publish_reaction_removed(
-        channel: pika.channel.Channel,
+    async def publish_reaction_removed(
+        channel: aio_pika.Channel,
         post_id: uuid.UUID,
         actor_id: uuid.UUID,
         user_id: uuid.UUID,
@@ -103,21 +103,20 @@ class NotificationEventPublisher:
             "user_id": str(user_id),
         }
 
-        return NotificationEventPublisher._publish_event(channel, event)
+        return await NotificationEventPublisher._publish_event(channel, event)
 
     @staticmethod
-    def _publish_event(channel: pika.channel.Channel, event: dict) -> bool:
+    async def _publish_event(channel: aio_pika.Channel, event: dict) -> bool:
         try:
             body = json.dumps(event)
 
-            channel.basic_publish(
-                exchange="",
-                routing_key=settings.MQ_QUEUE,
-                body=body,
-                properties=pika.BasicProperties(
+            await channel.default_exchange.publish(
+                aio_pika.Message(
+                    body=body.encode(),
                     content_type="application/json",
-                    delivery_mode=2
-                )
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+                ),
+                routing_key=settings.MQ_QUEUE
             )
 
             logger.info(f"Published {event['type']} event for user {event['user_id']}")
