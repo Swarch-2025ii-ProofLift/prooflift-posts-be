@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     DB_HOST: str
     DB_NAME: str
     DB_PORT: int = 5432
-    DB_DRIVERNAME: str = "postgresql+psycopg"
+    DB_DRIVERNAME: str = "postgresql+asyncpg"
 
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
