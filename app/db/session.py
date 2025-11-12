@@ -21,8 +21,9 @@ engine = create_async_engine(
     pool_timeout=30,
     pool_pre_ping=True,
     pool_recycle=3600,
+    pool_use_lifo=True,
     connect_args={
-        "command_timeout": 60,
+        "command_timeout": 50,
         "server_settings": {
             "application_name": "prooflift_posts",
             "jit": "off"
@@ -41,8 +42,13 @@ AsyncSessionLocal = async_sessionmaker(
 Base = declarative_base()
 
 async def get_db():
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+    session = AsyncSessionLocal()
+    try:
+        yield session
+        if session.in_transaction():
+            await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
