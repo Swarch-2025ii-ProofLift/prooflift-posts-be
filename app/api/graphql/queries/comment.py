@@ -11,18 +11,21 @@ from app.utils.graphql_helpers import handle_service_call_async
 class CommentQueries:
     @strawberry.field
     async def get_comments_for_post(self, info: Info, post_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[CommentType]:
-        db = info.context["db"]
-        service = CommentService(db)
-        return await handle_service_call_async(service.list_comments, post_id, skip, limit)
+        session_manager = info.context["session_manager"]
+        async with session_manager.get_session() as db:
+            service = CommentService(db)
+            return await handle_service_call_async(service.list_comments, post_id, skip, limit)
 
     @strawberry.field
     async def count_comments_for_post(self, info: Info, post_id: uuid.UUID) -> int:
-        db = info.context["db"]
-        service = CommentService(db)
-        return await handle_service_call_async(service.count_comments, post_id)
-    
+        session_manager = info.context["session_manager"]
+        async with session_manager.get_session() as db:
+            service = CommentService(db)
+            return await handle_service_call_async(service.count_comments, post_id)
+
     @strawberry.field
     async def get_comment(self, info: Info, comment_id: uuid.UUID) -> Optional[CommentType]:
-        db = info.context["db"]
-        service = CommentService(db)
-        return await handle_service_call_async(service.get_comment, comment_id)
+        session_manager = info.context["session_manager"]
+        async with session_manager.get_session() as db:
+            service = CommentService(db)
+            return await handle_service_call_async(service.get_comment, comment_id)

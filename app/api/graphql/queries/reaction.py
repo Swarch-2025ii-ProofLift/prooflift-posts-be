@@ -14,14 +14,16 @@ class ReactionQueries:
     async def get_reactions_for_post(
         self, info: Info, post_id: uuid.UUID, type: Optional[ReactionType] = None
     ) -> List[ReactionObjectType]:
-        db = info.context["db"]
-        service = ReactionService(db)
-        return await handle_service_call_async(service.list_reactions, post_id, type)
+        session_manager = info.context["session_manager"]
+        async with session_manager.get_session() as db:
+            service = ReactionService(db)
+            return await handle_service_call_async(service.list_reactions, post_id, type)
 
     @strawberry.field
     async def count_reactions_for_post(
         self, info: Info, post_id: uuid.UUID, type: Optional[ReactionType] = None
     ) -> int:
-        db = info.context["db"]
-        service = ReactionService(db)
-        return await handle_service_call_async(service.count_reactions, post_id, type)
+        session_manager = info.context["session_manager"]
+        async with session_manager.get_session() as db:
+            service = ReactionService(db)
+            return await handle_service_call_async(service.count_reactions, post_id, type)

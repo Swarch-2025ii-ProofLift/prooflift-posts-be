@@ -12,31 +12,34 @@ from app.utils.graphql_helpers import handle_service_call_async
 class CommentMutations:
     @strawberry.mutation
     async def add_comment(self, info: Info, post_id: uuid.UUID, body: str) -> CommentType:
-        db = info.context["db"]
+        session_manager = info.context["session_manager"]
         user_id = info.context.get("user_id")
         mq_channel = info.context.get("mq_channel")
         if not user_id:
             raise AuthenticationError()
-        service = CommentService(db, mq_channel)
-        comment_in = CommentCreate(post_id=post_id, body=body)
-        return await handle_service_call_async(service.add_comment, user_id, comment_in)
+        async with session_manager.get_session() as db:
+            service = CommentService(db, mq_channel)
+            comment_in = CommentCreate(post_id=post_id, body=body)
+            return await handle_service_call_async(service.add_comment, user_id, comment_in)
 
     @strawberry.mutation
     async def update_comment(self, info: Info, comment_id: uuid.UUID, body: str) -> CommentType:
-        db = info.context["db"]
+        session_manager = info.context["session_manager"]
         user_id = info.context.get("user_id")
         if not user_id:
             raise AuthenticationError()
-        service = CommentService(db)
-        comment_in = CommentUpdate(body=body)
-        return await handle_service_call_async(service.update_comment, comment_id, user_id, comment_in)
+        async with session_manager.get_session() as db:
+            service = CommentService(db)
+            comment_in = CommentUpdate(body=body)
+            return await handle_service_call_async(service.update_comment, comment_id, user_id, comment_in)
 
     @strawberry.mutation
     async def delete_comment(self, info: Info, comment_id: uuid.UUID) -> CommentType:
-        db = info.context["db"]
+        session_manager = info.context["session_manager"]
         user_id = info.context.get("user_id")
         mq_channel = info.context.get("mq_channel")
         if not user_id:
             raise AuthenticationError()
-        service = CommentService(db, mq_channel)
-        return await handle_service_call_async(service.delete_comment, comment_id, user_id)
+        async with session_manager.get_session() as db:
+            service = CommentService(db, mq_channel)
+            return await handle_service_call_async(service.delete_comment, comment_id, user_id)
